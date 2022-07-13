@@ -1,0 +1,355 @@
+npm init -y
+npm i bcrypt cors dotenv express express-fileupload jsonwebtoken pg pg-hstore sequelize
+
+"dev":"nodemon server.js"
+server.js
+
+app.mvc
+app.parse
+
+const sequelize = require("./db");
+const {Sequelize} = require('sequelize')
+
+module.exports = new Sequelize(
+    process.env.DB_NAME, 
+    process.env.DB_USER, 
+    process.env.DB_PASSWORD, 
+    {
+        dialect: 'postgres',
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT
+    }
+)
+
+.env
+PORT=5000
+DB_NAME=online_store
+DB_USER=postgres
+DB_PASSWORD=phuong
+DB_HOST=localhost
+DB_PORT=5432
+
+const start = async () => {
+  try {
+    await sequelize.authenticate();
+    await sequelize.sync();
+    app.listen(port, () => console.log(`Server started on port ${port}`));
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+start();
+
+models.js
+
+const sequelize = require("../db");
+const { DataTypes } = require("sequelize");
+
+const User = sequelize.define("user", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  email: { type: DataTypes.STRING, unique: true },
+  password: { type: DataTypes.STRING },
+  role: { type: DataTypes.STRING, defaultValue: "USER" },
+});
+
+const Basket = sequelize.define("basket", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+});
+
+const BasketDevice = sequelize.define("basket_device", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+});
+
+const Device = sequelize.define("device", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, unique: true, allowNull: false },
+  price: { type: DataTypes.INTEGER, allowNull: false },
+  rating: { type: DataTypes.INTEGER, defaultValue: 0 },
+  img: { type: DataTypes.STRING, allowNull: false },
+});
+
+const Type = sequelize.define("type", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, unique: true, allowNull: false },
+});
+
+const Brand = sequelize.define("brand", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, unique: true, allowNull: false },
+});
+
+const Rating = sequelize.define("rating", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  rate: { type: DataTypes.INTEGER, allowNull: false },
+});
+
+const DeviceInfo = sequelize.define("device_info", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  title: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.STRING, allowNull: false },
+});
+
+const TypeBrand = sequelize.define("type_brand", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+});
+
+User.hasOne(Basket);
+Basket.belongsTo(User);
+
+User.hasMany(Rating);
+Rating.belongsTo(User);
+
+Basket.hasMany(BasketDevice);
+BasketDevice.belongsTo(Basket);
+
+Type.hasMany(Device);
+Device.belongsTo(Type);
+
+Brand.hasMany(Device);
+Device.belongsTo(Brand);
+
+Device.hasMany(Rating);
+Rating.belongsTo(Device);
+
+Device.hasMany(BasketDevice);
+BasketDevice.belongsTo(Device);
+
+Device.hasMany(DeviceInfo, { as: "info" });
+DeviceInfo.belongsTo(Device);
+
+Type.belongsToMany(Brand, { through: TypeBrand });
+Brand.belongsToMany(Type, { through: TypeBrand });
+
+module.exports = {
+  User,
+  Basket,
+  BasketDevice,
+  Device,
+  Type,
+  Brand,
+  Rating,
+  TypeBrand,
+  DeviceInfo,
+};
+
+brandRouter.js
+
+const router = require("express").Router();
+
+
+const brandRouter = require("./brandRouter");
+
+
+router.use("/brand", brandRouter);
+// router.use('/user', userRouter)
+// router.use('/type', typeRouter)
+// router.use('/device', deviceRouter)
+
+module.exports = router;
+const router = require("express").Router();
+
+const brandController = require("../controllers/brandController");
+
+router.get("/", brandController.getAll);
+router.post("/", brandController.create);
+router.get("/:id", brandController.getOne);
+router.put("/:id", brandController.updateOne);
+router.delete("/:id", brandController.deleteOne);
+module.exports = router;
+
+const { Brand } = require("../models/models");
+
+const BrandController = {
+  create: async (req, res) => {
+    try {
+      const { name } = req.body;
+      const brand = await Brand.create({ name });
+      res.json(brand);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getAll: async (req, res) => {
+    try {
+      const brands = await Brand.findAll();
+      res.json(brands);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getOne: async (req, res) => {
+    try {
+      const brand = await Brand.findByPk(req.params.id);
+      res.json(brand);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  updateOne: async (req, res) => {
+    try {
+      const { name } = req.body;
+      const brand = await Brand.update(
+        { name },
+        { where: { id: req.params.id } }
+      );
+      res.json(brand);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  deleteOne: async (req, res) => {
+    try {
+      const brand = await Brand.destroy({ where: { id: req.params.id } });
+      res.json(brand);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+};
+module.exports = BrandController;
+
+const router = require("express").Router();
+
+const typeController = require("../controllers/typeController");
+
+router.post("/", typeController.create);
+router.get("/", typeController.getAll);
+router.get("/:id", typeController.getOne);
+router.put("/:id", typeController.updateOne);
+router.delete("/:id", typeController.deleteOne);
+module.exports = router;
+
+const { Type } = require("../models/models");
+
+const typeController = {
+  create: async (req, res) => {
+    try {
+      const { name } = req.body;
+      const type = await Type.create({ name });
+      res.json(type);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getAll: async (req, res) => {
+    try {
+      const types = await Type.findAll();
+      res.json(types);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getOne: async (req, res) => {
+    try {
+      const type = await Type.findByPk(req.params.id);
+      res.json(type);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  updateOne: async (req, res) => {
+    try {
+      const { name } = req.body;
+      const type = await Type.update(
+        { name },
+        { where: { id: req.params.id } }
+      );
+      res.json(type);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  deleteOne: async (req, res) => {
+    try {
+      const type = await Type.destroy({ where: { id: req.params.id } });
+      res.json(type);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+};
+module.exports = typeController;
+
+const router = require("express").Router();
+const auth = require("../middleware/auth");
+const authAdmin = require("../middleware/authAdmin");
+
+const userController = require("../controllers/userController");
+router.post("/register", userController.register);
+router.post("/login", userController.login);
+router.get("/profile", auth,authAdmin,userController.profile);
+module.exports = router;
+
+const { User, Basket } = require("../models/models");
+const bcryptjs = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const userController = {
+  register: async (req, res) => {
+    try {
+      const { email, password, role } = req.body;
+      const user = await User.findOne({ where: { email } });
+      if (user)
+        return res.status(400).json({ message: "The email already exists" });
+      if (password.length < 6)
+        return res.status(400).json({ message: "password is at the 6 char" });
+      const passwordHash = await bcryptjs.hash(password, 10);
+      const newUser = await User.create({
+        email,
+        role,
+        password: passwordHash,
+      });
+      const basket = await Basket.create({ userId: newUser.id });
+      const accesstoken = jwt.sign({ userId: newUser.id }, process.env.ACCESS, {
+        expiresIn: "1d",
+      });
+      res.json({ accesstoken });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ where: { email } });
+      if (!user)
+        return res.status(400).json({ message: "User does not exists" });
+      const isWatch = await bcryptjs.compare(password, user.password);
+      if (!isWatch)
+        return res.status(400).json({ message: "incorrect password" });
+      const accesstoken = jwt.sign({ userId: user.id }, process.env.ACCESS, {
+        expiresIn: "1d",
+      });
+      res.json({ accesstoken });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  profile: async (req, res) => {
+    try {
+      const user = await User.findByPk(req.user.userId);
+      res.json(user);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+};
+module.exports = userController;
+
+const path = require('path')
+app.use(express.static(path.resolve(__dirname, 'static')))
+const fileUpload = require("express-fileupload");
+app.use(fileUpload({}));
+
+const router = require('express').Router()
+
+const deviceController = require('../controllers/deviceController')
+
+router.post('/', deviceController.create)
+router.get('/', deviceController.getAll)
+router.get('/:id', deviceController.getOne)
+router.put("/:id", deviceController.updateOne);
+router.delete("/:id", deviceController.deleteOne);
+
+module.exports  = router
+
